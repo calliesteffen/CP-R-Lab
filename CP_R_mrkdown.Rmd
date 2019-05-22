@@ -9,3 +9,34 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+# Load the libraries into this R session
+library(raster)       #Main raster library with nearly all functions used in this analysis
+library(rgdal)        #Spatial library - most functions used from rgdal are for vectors (shapefiles)
+library(rasterVis)    #Useful for raster visualizations
+library(maps)         #Has a database of maps. I use this to add a map to my raster to visualize land boundaries
+library(rgeos)        #Need this library for topology operations on geometries
+library(dplyr)        #NOT spatial - this is a data wrangling library
+library(RColorBrewer) #Also not spatial - used to set the spectral color scheme 
+```
+
+Set Color Palette for Later
+```{r}
+# view some color palettes
+# display.brewer.all()
+# rainbow color scheme
+cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255)) 
+
+#setting smaller margins for plotting
+par(mar=c(2,2,1,1))
+```
+
+
+Import Raster Data
+```{r}
+
+all_threats <- raster()
+
+
+```
+
