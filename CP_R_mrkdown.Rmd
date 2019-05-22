@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+### Part 1: Setup
 ```{r}
 # Load the libraries into this R session
 library(raster)       #Main raster library with nearly all functions used in this analysis
@@ -32,11 +32,93 @@ par(mar=c(2,2,1,1))
 ```
 
 
-Import Raster Data
+### Part 2: Import Raster Data and Visualize
 ```{r}
 
-all_threats <- raster()
+all_threats <- raster("Threats_data/full_modelnv.tif")
 
+plot(all_threats, col = cols)
+
+#all_threats
+#do the above in console to get info about the raster: dimensions, resolution, extent, coord.ref, data source
+
+# add a landmap to your shapefile. the add=T argument tells R to add it to the existing plot.
+# make sure you understand what the other arguments do
+#run the following lines together
+plot(all_threats,ext=extent(-130,-110,24,50),col=cols) #extent to zoom in
+map('world',fill=T,add=T,col='gray')
+
+#for a different extent: Santa Barbara Channel
+
+plot(all_threats,ext=extent(-121,-117,32,35),col=cols, main = "Cumulative Threats") #main adds title
+
+#the zoom() function allows you to draw your extent by clicking twice. run together with plot, but not in markdown html
+plot(all_threats, col = cols)
+
+
+```
+
+Raster data Attributes
+```{r}
+#frequency histogram od raster cell values
+
+hist(all_threats, main = "Cumulative Threats Frequency")
+
+cellStats(all_threats, mean)
+cellStats(all_threats, sd)
+
+```
+
+###Part 3: Raster Calculations
+
+Overlay top 20% of cumulative threats with the top 20% of species richness to find threat hotspots
+Steps:
+1. Import the data (already done for threats)
+2. Resmaple the data to the sample resolution
+3. Reclassify the data to find the top 20%
+4. Overlay the data and find hotspots
+
+1. Import the data (already done for threats)
+```{r}
+all_spp <- raster("ca_curr_sp_rich.tif")
+
+#all_spp
+
+plot(all_spp, col = cols)
+```
+
+2. Resmaple the data to the sample resolution and extent (Cropping and Resolving)
+threats has a greater extent
+threats has a finer resolution
+```{r}
+#crop the threats layer to the extent of the species layer
+
+threats_crop <- crop(all_threats, all_spp) #crops threat layer to same extent of species
+
+#resample species layer to have same resolution as threats. Subsample species layer to arteficially have a higher resolution
+
+spp_res <- resample(all_spp, threats_crop, method = 'ngb', progress = 'text')
+# progrerss = 'text' prints out the progress in the console. good for longer running function so you can see progress
+# method = 'ngb' specifices that we want to use a nearest neighbor algorithm to resmaple, instead of interpololation
+
+
+#Check that layers line up by using stack() function
+spp_threat_stack <- stack(threats_crop, spp_res)
+plot(spp_threat_stack, col = cols)
+
+```
+
+3. Reclassify the data to find the top 20%
+```{r}
+hist(spp_res, main = "Species Raster Values")
+#this layer has a lot of zeroes --> reassign zeroes which from the plot look like they should be NAs
+spp_res <- reclassify(spp_res, rcl = c(-Inf,0,NA)) #overwrites the original spp_res object
+hist(spp_res, main = "Species Raster Values, Zeroes removed")
+```
+
+
+4. Overlay the data and find hotspots
+```{r}
 
 ```
 
