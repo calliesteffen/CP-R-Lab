@@ -27,7 +27,6 @@ cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255))
 #setting smaller margins for plotting
 par(mar=c(2,2,1,1))
 ```
-```
 
 
 Load threat layers for climate: acid, sst, uv
@@ -36,12 +35,40 @@ Load threat layers for climate: acid, sst, uv
 acid <- raster("Threats_data/impact_acid.tif")
 plot(acid, col = cols)
 
-sst <- raster("Threats_data/impacts_sst.tif")
+sst <- raster("Threats_data/impact_sst.tif")
 plot(sst, col = cols)
 
-uv <- raster("Threats_data/impacts_uv.tif")
+uv <- raster("Threats_data/impact_uv.tif")
 plot(uv, col = cols)
 
 
 ```
+stack climate layers
+```{r}
+climate_stack <- stack(acid, sst, uv)
+plot(climate_stack, col = cols)
+#resolution and extents already the same
+```
+reclassify zeroes as NAs if needed
+```{r}
+hist(acid)
+acid <- reclassify(acid, rcl = c(-Inf, 0, NA))
+plot(acid)
 
+hist(sst)
+#sst_test <- reclassify(sst, rcl = c(-Inf, 0 , NA))
+sst_masked <- mask(sst, acid) #mask sst layer to shape of reclassified acid layer (removes NAs coded as 0 and keep real 0s)
+plot(sst_masked)
+
+hist(uv)
+uv <- reclassify(uv, rcl = c(-Inf, 0, NA))
+plot(uv)
+
+```
+
+Still to come....
+-reclassify top 20%
+-overlay climate threats
+
+and then....
+-overlay climate threats with species to get hotspots (in this will need to check extent and resolution)
