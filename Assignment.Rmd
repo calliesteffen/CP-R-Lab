@@ -1,6 +1,6 @@
 ---
 title: "Assignment"
-author: "Priscilla Hare and Callie Steffan"
+author: "Priscilla Hare and Callie Steffen"
 date: "5/29/2019"
 output: html_document
 ---
