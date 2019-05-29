@@ -19,3 +19,29 @@ library(rgeos)        #Need this library for topology operations on geometries
 library(dplyr)        #NOT spatial - this is a data wrangling library
 library(RColorBrewer) #Also not spatial - used to set the spectral color scheme 
 ```
+
+```{r}
+# rainbow color scheme
+cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255)) 
+
+#setting smaller margins for plotting
+par(mar=c(2,2,1,1))
+```
+```
+
+
+Load threat layers for climate: acid, sst, uv
+```{r}
+
+acid <- raster("Threats_data/impact_acid.tif")
+plot(acid, col = cols)
+
+sst <- raster("Threats_data/impacts_sst.tif")
+plot(sst, col = cols)
+
+uv <- raster("Threats_data/impacts_uv.tif")
+plot(uv, col = cols)
+
+
+```
+
