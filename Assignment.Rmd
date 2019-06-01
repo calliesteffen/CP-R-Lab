@@ -29,46 +29,203 @@ par(mar=c(2,2,1,1))
 ```
 
 
-Load threat layers for climate: acid, sst, uv
+Load threat layers for climate: acid, sst, uv. and load species
 ```{r}
 
 acid <- raster("Threats_data/impact_acid.tif")
-plot(acid, col = cols)
+#plot(acid, col = cols)
 
 sst <- raster("Threats_data/impact_sst.tif")
-plot(sst, col = cols)
+#plot(sst, col = cols)
 
 uv <- raster("Threats_data/impact_uv.tif")
-plot(uv, col = cols)
+#plot(uv, col = cols)
+
+all_spp <- raster("ca_curr_sp_rich.tif")
 
 
 ```
 stack climate layers
 ```{r}
 climate_stack <- stack(acid, sst, uv)
-plot(climate_stack, col = cols)
+#plot(climate_stack, col = cols)
 #resolution and extents already the same
 ```
 reclassify zeroes as NAs if needed
 ```{r}
-hist(acid)
+#hist(acid)
 acid <- reclassify(acid, rcl = c(-Inf, 0, NA))
-plot(acid)
+#plot(acid)
 
-hist(sst)
+#hist(sst)
 #sst_test <- reclassify(sst, rcl = c(-Inf, 0 , NA))
 sst_masked <- mask(sst, acid) #mask sst layer to shape of reclassified acid layer (removes NAs coded as 0 and keep real 0s)
-plot(sst_masked)
+#plot(sst_masked)
 
-hist(uv)
+#hist(uv)
 uv <- reclassify(uv, rcl = c(-Inf, 0, NA))
-plot(uv)
+#plot(uv)
 
 ```
 
-Still to come....
--reclassify top 20%
--overlay climate threats
+Sum climate threats 
+```{r}
+climate_threats <- overlay(acid, uv, sst_masked, fun = function(x,y,z){x + y + z})
 
-and then....
--overlay climate threats with species to get hotspots (in this will need to check extent and resolution)
+#plot(climate_threats)
+```
+
+Resample to get extent and resolution same between threats and species
+```{r}
+
+climate_crop <- crop(climate_threats, all_spp) # correct extent for threats
+
+spp_res <- resample(all_spp, climate_crop, method = 'ngb')
+
+#get zeroes out of species
+spp_res <- reclassify(spp_res, rcl = c(-Inf,0,NA))
+
+```
+
+Take top 20%
+```{r}
+#first threats
+
+climate_cutoff <- quantile(climate_crop, 0.8)
+climate_max <- cellStats(climate_crop, max)
+
+rcl_mat_cl <- c(-Inf, climate_cutoff, 0,
+             climate_cutoff, climate_max, 1)
+
+climate_binary <- reclassify(climate_crop, rcl = rcl_mat_cl)
+
+#plot(climate_binary)
+
+#now species
+spp_cutoff <- quantile(spp_res, 0.8)
+spp_max <- cellStats(spp_res, max)
+
+rcl_mat_sp <- c(-Inf, spp_cutoff, 0,
+                spp_cutoff, spp_max, 1)
+
+spp_binary <- reclassify(spp_res, rcl = rcl_mat_sp)
+
+#plot(spp_binary)
+
+```
+Now overlay climate threats and spp top 20
+```{r}
+climate_hotpots <- overlay(spp_binary, climate_binary, fun = function(x,y){x + y})
+
+hotspot_cols <- c("lightblue", "lightblue", "firebrick")
+
+plot(climate_hotpots, col = hotspot_cols, legend = F); map('world', fill = T, add = T, col = 'gray80')
+
+```
+
+
+## Now do the same for fishing threats
+
+
+Load threat layers for fishing: recreational, bycatch (high and low), pelagiv (high low), demersal destructive
+```{r}
+
+rec <- raster("Threats_data/impact_rec_fish.tif")
+
+dem_nd_hb <- raster("Threats_data/impact_dem_nd_hb.tif")
+
+dem_nd_lb <- raster("Threats_data/impact_dem_nd_lb.tif")
+
+dem_pel_hb <- raster("Threats_data/impact_pel_hb.tif")
+
+dem_pel_lb <- raster("Threats_data/impact_pel_lb.tif")
+
+dem_dem_d <- raster("Threats_data/impact_dem_d.tif")
+
+
+```
+
+stack climate layers
+```{r}
+fish_stack <- stack(rec, dem_nd_hb, dem_nd_lb, dem_pel_hb, dem_pel_lb, dem_dem_d)
+#plot(fish_stack, col = cols)
+#resolution and extents already the same
+```
+reclassify zeroes as NAs if needed
+```{r}
+
+rec_masked <- mask(rec, sst_masked) #mask rec layer to shape of masked sst layer (removes NAs coded as 0 and keep real 0s). because we already like the extent of sst amsked
+#plot(rec_masked, col = cols); map('world', fill = T, add = T, col = 'gray80')
+
+dem_nd_hb_masked <- mask(dem_nd_hb, sst_masked)
+#plot(dem_nd_hb_masked, col = cols); map('world', fill = T, add = T, col = 'gray80')
+
+dem_nd_lb_masked <- mask(dem_nd_lb, sst_masked)
+#plot(dem_nd_lb_masked, col = cols); map('world', fill = T, add = T, col = 'gray80')
+
+dem_pel_hb_masked <- mask(dem_pel_hb, sst_masked)
+#plot(dem_pel_hb_masked, col = cols); map('world', fill = T, add = T, col = 'gray80')
+
+dem_pel_lb_masked <- mask(dem_pel_lb, sst_masked)
+#plot(dem_pel_lb_masked, col = cols); map('world', fill = T, add = T, col = 'gray80')
+
+dem_dem_d_masked <- mask(dem_dem_d, sst_masked)
+#plot(dem_dem_d_masked, col = cols); map('world', fill = T, add = T, col = 'gray80')
+
+```
+
+Sum fishing threats 
+```{r}
+fishing_threats <- overlay(rec_masked, dem_nd_hb_masked, dem_nd_lb_masked, dem_pel_hb_masked, dem_pel_lb_masked, dem_dem_d_masked, fun = function(a,b,c,d,e,f){a + b + c + d + e + f})
+
+#plot(fishing_threats)
+```
+
+Resample to get extent and resolution same between threats and species
+```{r}
+
+fishing_crop <- crop(fishing_threats, all_spp) # correct extent for threats
+
+#plot(fishing_crop)
+
+spp_res <- resample(all_spp, fishing_crop, method = 'ngb')
+
+#get zeroes out of species
+spp_res <- reclassify(spp_res, rcl = c(-Inf,0,NA))
+
+```
+
+Take top 20%
+```{r}
+#first threats
+fishing_cutoff <- quantile(fishing_crop, 0.8)
+fishing_max <- cellStats(fishing_crop, max)
+
+rcl_mat_fish <- c(-Inf, fishing_cutoff, 0,
+             fishing_cutoff, fishing_max, 1)
+
+fishing_binary <- reclassify(fishing_crop, rcl = rcl_mat_fish)
+
+#plot(fishing_binary)
+
+#now species
+spp_cutoff <- quantile(spp_res, 0.8)
+spp_max <- cellStats(spp_res, max)
+
+rcl_mat_sp <- c(-Inf, spp_cutoff, 0,
+                spp_cutoff, spp_max, 1)
+
+spp_binary <- reclassify(spp_res, rcl = rcl_mat_sp)
+
+#plot(spp_binary)
+
+```
+Now overlay climate threats and spp top 20
+```{r}
+fishing_hotpots <- overlay(spp_binary, fishing_binary, fun = function(x,y){x + y})
+
+hotspot_cols <- c("lightblue", "lightblue", "firebrick")
+
+plot(fishing_hotpots, col = hotspot_cols, legend = F); map('world', fill = T, add = T, col = 'gray80')
+
+```
