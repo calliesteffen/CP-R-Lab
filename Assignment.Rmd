@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # Load the libraries into this R session
+
 library(raster)       #Main raster library with nearly all functions used in this analysis
 library(rgdal)        #Spatial library - most functions used from rgdal are for vectors (shapefiles)
 library(rasterVis)    #Useful for raster visualizations
@@ -18,6 +19,8 @@ library(maps)         #Has a database of maps. I use this to add a map to my ras
 library(rgeos)        #Need this library for topology operations on geometries
 library(dplyr)        #NOT spatial - this is a data wrangling library
 library(RColorBrewer) #Also not spatial - used to set the spectral color scheme 
+library(tmap)
+
 ```
 
 ```{r}
@@ -117,11 +120,37 @@ Now overlay climate threats and spp top 20
 ```{r}
 climate_hotpots <- overlay(spp_binary, climate_binary, fun = function(x,y){x + y})
 
-hotspot_cols <- c("lightblue", "lightblue", "firebrick")
+climate_hotpots2 <- reclassify(climate_hotpots, rcl = c(-Inf, 1.5, NA))
 
-plot(climate_hotpots, col = hotspot_cols, legend = F); map('world', fill = T, add = T, col = 'gray80')
+hotspot_cols <- c("firebrick")
 
+plot(climate_hotpots2, col = hotspot_cols, legend = F)
+map("world", fill = T, add = T, col = 'gray80') #this stopped working. not sure why
 ```
+
+
+```{r}
+
+data("World")
+
+climate_hotspot_map <- tm_shape(climate_hotpots2) +
+  tm_raster("layer", title = " ", palette = hotspot_cols, labels = "Climate Threat Hotspots") +
+  tm_shape(World) +
+  tm_fill("gray80") +
+  tm_borders("black") +
+  tm_layout(bg.color = "lightblue",
+            legend.position = c(0.05, .15),
+            legend.text.color = "black",
+            legend.text.size = .5, 
+            legend.width = 5) +
+  tm_compass(north = 0, type = "arrow", position = c("right", "top")) +
+  tm_credits("Map: Priscilla Hare, June 1, 2019\nSource: Halpern et al 2009\nPublisher: ESM 270", position = c(0.05, .05), size = .4)
+
+climate_hotspot_map
+
+tmap_save(climate_hotspot_map, "climate_hs_map.png", height = 5)
+```
+
 
 
 ## Now do the same for fishing threats
@@ -226,6 +255,40 @@ fishing_hotpots <- overlay(spp_binary, fishing_binary, fun = function(x,y){x + y
 
 hotspot_cols <- c("lightblue", "lightblue", "firebrick")
 
-plot(fishing_hotpots, col = hotspot_cols, legend = F); map('world', fill = T, add = T, col = 'gray80')
+#plot(fishing_hotpots, col = hotspot_cols, legend = F)
+#map('world', fill = T, add = T, col = 'gray80')
 
 ```
+
+```{r}
+fishing_hotpots2 <- reclassify(fishing_hotpots, rcl = c(-Inf, 1.5, NA))
+
+hotspot_cols <- c("firebrick")
+
+#plot(climate_hotpots2, col = hotspot_cols, legend = F)
+#map("world", fill = T, add = T, col = 'gray80') #this stopped working. not sure why
+```
+
+
+```{r}
+
+data("World")
+
+fishing_hotspot_map <- tm_shape(fishing_hotpots2) +
+  tm_raster("layer", title = " ", palette = hotspot_cols, labels = "Fishing Threat Hotspots") +
+  tm_shape(World) +
+  tm_fill("gray80") +
+  tm_borders("black") +
+  tm_layout(bg.color = "lightblue",
+            legend.position = c(0.05, .15),
+            legend.text.color = "black",
+            legend.text.size = .5, 
+            legend.width = 5) +
+  tm_compass(north = 0, type = "arrow", position = c("right", "top")) +
+  tm_credits("Map: Callie Steffen, June 1, 2019\nSource: Halpern et al 2009\nPublisher: ESM 270", position = c(0.05, .05), size = .4)
+
+fishing_hotspot_map
+
+tmap_save(fishing_hotspot_map, "fishing_hs_map.png", height = 5)
+```
+
