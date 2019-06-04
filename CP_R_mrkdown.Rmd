@@ -18,6 +18,7 @@ library(maps)         #Has a database of maps. I use this to add a map to my ras
 library(rgeos)        #Need this library for topology operations on geometries
 library(dplyr)        #NOT spatial - this is a data wrangling library
 library(RColorBrewer) #Also not spatial - used to set the spectral color scheme 
+library(tmap)
 ```
 
 Set Color Palette for Later
@@ -173,6 +174,31 @@ hotspots <- overlay(spp_binary, threats_binary, fun = function(x,y){x + y}) #can
 hotspot_cols <- c("white", "lightblue", "firebrick")
 
 plot(hotspots, col = hotspot_cols, legend = F, main = "Hotspots"); map('world', fill = T, add = T, col = 'gray80')
+
+data("World")
+
+all_hotspots2 <- reclassify(hotspots, rcl = c(-Inf, 1.5, NA))
+hotspot_cols2 <- c("firebrick")
+
+all_hotspot_map <- tm_shape(all_hotpots2) +
+  tm_raster("layer", title = " ", palette = hotspot_cols2, labels = "All Threats Hotspots") +
+  tm_shape(World) +
+  tm_fill("gray80") +
+  tm_borders("black") +
+  tm_layout(bg.color = "lightblue",
+            legend.position = c(0.05, .15),
+            legend.text.color = "black",
+            legend.text.size = .5, 
+            legend.width = 5) +
+  tm_compass(north = 0, type = "arrow", position = c("right", "top")) +
+  tm_credits("Map: Callie Steffen and Priscilla Hare, June 1, 2019\nSource: Halpern et al 2009\nPublisher: ESM 270", position = c(0.05, .05), size = .4)
+
+all_hotspot_map
+
+tmap_save(all_hotspot_map, "all_hs_map.png", height = 5)
+
+
+
 
 #zoom in SB channel
 plot(hotspots, col = hotspot_cols, ext = extent(-121,-117,32,35), legend = F, main = "Hotspots, SB Channel"); map('world', fill = T, add = T, col = 'gray80')
